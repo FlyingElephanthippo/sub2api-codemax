@@ -104,7 +104,7 @@ func TestDomesticIPGatewayAliasesCannotBypass(t *testing.T) {
 					w := httptest.NewRecorder()
 					r.ServeHTTP(w, domesticGatewayRequest(route.method, route.path, "1.0.1.7"))
 					require.Equal(t, http.StatusForbidden, w.Code, w.Body.String())
-					require.Contains(t, w.Body.String(), "当前国内 IP 尚未放行")
+					require.Contains(t, w.Body.String(), "当前 IP 尚未放行")
 				})
 			}
 			require.Equal(t, len(paths), repo.calls)
