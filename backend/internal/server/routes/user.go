@@ -29,6 +29,12 @@ func RegisterUserRoutes(
 		user := authenticated.Group("/user")
 		{
 			user.GET("/profile", h.User.GetProfile)
+			if h.DomesticIP != nil {
+				user.GET("/ip-grants", h.DomesticIP.Status)
+				user.POST("/ip-grants", h.DomesticIP.Add)
+				user.PUT("/ip-grants/:id", h.DomesticIP.Replace)
+				user.DELETE("/ip-grants/:id", h.DomesticIP.Delete)
+			}
 			user.PUT("/password", h.User.ChangePassword)
 			user.PUT("", h.User.UpdateProfile)
 			user.GET("/aff", h.User.GetAffiliate)

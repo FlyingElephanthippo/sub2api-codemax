@@ -66,6 +66,7 @@ const DefaultUpstreamResponseReadMaxBytes int64 = 128 * 1024 * 1024
 const DefaultModelsListReadMaxBytes int64 = 8 * 1024 * 1024
 
 type Config struct {
+	DomesticIP              DomesticIPConfig              `mapstructure:"domestic_ip"`
 	Server                  ServerConfig                  `mapstructure:"server"`
 	Log                     LogConfig                     `mapstructure:"log"`
 	CORS                    CORSConfig                    `mapstructure:"cors"`
@@ -2048,6 +2049,13 @@ func configureConfigSource(setConfigFile, addConfigPath func(string)) {
 }
 
 func setDefaults() {
+	viper.SetDefault("domestic_ip.enabled", false)
+	viper.SetDefault("domestic_ip.snapshot_file", "")
+	viper.SetDefault("domestic_ip.snapshot_sha256", "")
+	viper.SetDefault("domestic_ip.trusted_proxy_ips", []string{"127.0.0.1", "::1"})
+	for _, key := range []string{"enabled", "snapshot_file", "snapshot_sha256", "trusted_proxy_ips"} {
+		_ = viper.BindEnv("domestic_ip."+key, "DOMESTIC_IP_"+strings.ToUpper(key))
+	}
 	viper.SetDefault("run_mode", RunModeStandard)
 	viper.SetDefault("gateway.min_output_tokens", 128)
 	viper.SetDefault("simple_mode.auto_create_default_groups", true)

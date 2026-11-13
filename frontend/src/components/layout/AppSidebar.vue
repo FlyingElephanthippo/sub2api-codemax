@@ -719,6 +719,7 @@ const ChevronDownIcon = {
 const flagChannelMonitor = makeSidebarFlag(FeatureFlags.channelMonitor)
 const flagPayment = makeSidebarFlag(FeatureFlags.payment)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
+const flagDomesticIPGrants = makeSidebarFlag(FeatureFlags.domesticIPGrants)
 const flagSubscription = makeSidebarFlag(FeatureFlags.subscription)
 
 // 购买入口文案随站点计费模式切换：仅充值 → 「充值」，仅订阅 → 「订阅」，否则「充值/订阅」。
@@ -752,6 +753,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
   }
   items.push(
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
+    { path: '/ip-grants', label: t('domesticIp.nav'), icon: ShieldIcon, featureFlag: flagDomesticIPGrants },
     { path: '/batch-image', label: t('nav.batchImage'), icon: BatchImageIcon, hideInSimpleMode: true, featureFlag: flagBatchImageAccess },
     { path: '/image-gen', label: t('nav.imageGen'), icon: ImageGenIcon, hideInSimpleMode: true, featureFlag: flagImageGenAccess },
     { path: '/video-gen', label: t('nav.videoGen'), icon: VideoGenIcon, hideInSimpleMode: true, featureFlag: () => isAdmin.value },

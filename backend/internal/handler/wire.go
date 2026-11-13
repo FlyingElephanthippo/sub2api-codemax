@@ -203,6 +203,7 @@ func ProvideHandlers(
 	asyncImageHandler *AsyncImageHandler,
 	batchImageHandler *BatchImageHandler,
 	imageGenerationHandler *ImageGenerationHandler,
+	domesticIPHandler *DomesticIPHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 	_ *service.OpenAIQuotaAutoResetService,
@@ -230,6 +231,7 @@ func ProvideHandlers(
 		AsyncImage:       asyncImageHandler,
 		BatchImage:       batchImageHandler,
 		ImageGeneration:  imageGenerationHandler,
+		DomesticIP:       domesticIPHandler,
 	}
 }
 
@@ -257,6 +259,7 @@ var ProviderSet = wire.NewSet(
 	NewAsyncImageHandler,
 	ProvideBatchImageHandler,
 	NewImageGenerationHandler,
+	NewDomesticIPHandler,
 
 	// Admin handlers
 	admin.NewDashboardHandler,

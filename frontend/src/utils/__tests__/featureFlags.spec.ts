@@ -56,6 +56,9 @@ describe('resolveFeatureFlag', () => {
     expect(resolveFeatureFlag(null, FeatureFlags.subscription)).toBe(true)
     expect(resolveFeatureFlag({} as PublicSettings, FeatureFlags.subscription)).toBe(true)
     expect(resolveFeatureFlag({} as PublicSettings, FeatureFlags.availableChannels)).toBe(false)
+    expect(resolveFeatureFlag(undefined, FeatureFlags.domesticIPGrants)).toBe(false)
+    expect(resolveFeatureFlag({ domestic_ip_grants_enabled: true }, FeatureFlags.domesticIPGrants)).toBe(true)
+    expect(resolveFeatureFlag({ domestic_ip_grants_enabled: false }, FeatureFlags.domesticIPGrants)).toBe(false)
   })
 
   it('backs isFeatureFlagEnabled with the same resolution', () => {

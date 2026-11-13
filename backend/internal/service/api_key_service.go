@@ -288,6 +288,7 @@ type RateLimitCacheInvalidator interface {
 }
 
 type APIKeyService struct {
+	domesticIPAccess          *DomesticIPAccessService
 	apiKeyRepo                APIKeyRepository
 	userRepo                  UserRepository
 	groupRepo                 GroupRepository

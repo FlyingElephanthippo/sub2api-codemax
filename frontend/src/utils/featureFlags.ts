@@ -94,6 +94,11 @@ function defineFlag<K extends keyof PublicSettings>(
  * public-settings-driven switch; see the "Adding a new flag" checklist above.
  */
 export const FeatureFlags = {
+  domesticIPGrants: defineFlag({
+    key: 'domestic_ip_grants_enabled',
+    mode: 'opt-in',
+    label: 'IP self-service access',
+  }),
   channelMonitor: defineFlag({
     key: 'channel_monitor_enabled',
     mode: 'opt-out',

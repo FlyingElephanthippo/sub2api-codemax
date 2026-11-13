@@ -301,6 +301,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/ip-grants',
+    name: 'DomesticIPGrants',
+    component: () => import('@/views/user/DomesticIPView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'IP self-service access',
+      titleKey: 'domesticIp.title',
+      descriptionKey: 'domesticIp.description'
+    }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/user/ProfileView.vue'),
