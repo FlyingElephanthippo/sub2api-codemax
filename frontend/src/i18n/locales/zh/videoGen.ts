@@ -1,0 +1,22 @@
+export default {
+  videoGen: {
+    title: '视频生成', description: '用文字或一张参考图生成视频，完成后在此播放和下载。',
+    apiKey: 'API 密钥', selectKey: '选择密钥', noKeys: '没有可用于视频的密钥，请先创建绑定视频渠道的 API 密钥。',
+    model: '模型', selectModel: '选择模型', loadingModels: '正在获取模型…', noModels: '当前密钥没有可用的视频模型，请联系管理员配置视频渠道。',
+    retry: '重试', prompt: '视频描述', promptPlaceholder: '描述主体、动作、镜头和环境…', duration: '请求时长', seconds: '{count} 秒',
+    aspectRatio: '画面比例', landscape: '横屏 16:9', portrait: '竖屏 9:16', reference: '参考图（可选）',
+    referenceHint: '支持一张 PNG、JPEG 或 WebP，最大 10 MB。', removeReference: '移除参考图',
+    referenceError: '请选择有效的 PNG、JPEG 或 WebP 图片，大小不超过 10 MB。',
+    pricingNotice: '费用以所选渠道定价为准。Muse 的实际成片时长和画质以生成结果为准。',
+    generate: '生成视频', generating: '正在生成…', result: '生成结果', empty: '生成的视频会显示在这里。',
+    submitting: '正在提交任务…', processing: '正在生成视频…', completed: '视频已完成', failed: '视频生成失败', paused: '已停止查看进度',
+    taskID: '任务 ID', pause: '停止查看进度', resume: '继续查看进度', pauseHint: '停止查看不会取消已提交的生成任务；切换站内页面后任务会继续。',
+    timeout: '等待时间较长，已停止查看。可点击继续查看，无需再次生成。', download: '下载视频', loadVideo: '加载视频',
+    loadingVideo: '正在加载视频…', loadingCompletedVideo: '视频已生成，正在加载播放文件…', stopLoading: '停止加载',
+    downloadProgress: '已加载 {received} / {total} MB', downloadReceived: '已加载 {received} MB',
+    downloadTimeout: '视频加载超时。生成结果已保留，可点击“加载视频”重试，无需再次生成。',
+    downloadIncomplete: '视频文件传输中断。可点击“加载视频”重试，无需再次生成。',
+    recoveryError: '无法恢复任务：链接无效或所选密钥不可用。请使用当前账号可用的密钥和原任务链接。',
+    requestFailed: '请求失败，请重试。', apiUsage: 'API 调用方式', apiHint: '使用同一把 Sub2API 密钥提交、查询及下载视频。查询和下载需保留鉴权请求头。',
+  },
+}
