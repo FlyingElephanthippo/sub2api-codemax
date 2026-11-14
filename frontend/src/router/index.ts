@@ -301,6 +301,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/ip-grants',
+    name: 'DomesticIPGrants',
+    component: () => import('@/views/user/DomesticIPView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'IP self-service access',
+      titleKey: 'domesticIp.title',
+      descriptionKey: 'domesticIp.description'
+    }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/user/ProfileView.vue'),
@@ -460,6 +472,18 @@ const routes: RouteRecordRaw[] = [
       title: 'Audit Logs',
       titleKey: 'admin.audit.title',
       descriptionKey: 'admin.audit.description'
+    }
+  },
+  {
+    path: '/admin/ip-grants',
+    name: 'AdminDomesticIPGrants',
+    component: () => import('@/views/admin/DomesticIPGrantsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'IP access',
+      titleKey: 'adminDomesticIp.title',
+      descriptionKey: 'adminDomesticIp.description'
     }
   },
   {

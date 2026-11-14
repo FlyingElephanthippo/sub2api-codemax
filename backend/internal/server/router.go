@@ -115,6 +115,9 @@ func registerRoutes(
 ) {
 	// 通用路由（健康检查、状态等）
 	routes.RegisterCommonRoutes(r)
+	if h.DomesticIP != nil {
+		r.GET("/api/v1/internal/domestic-ip/access", h.DomesticIP.NetworkAccess)
+	}
 
 	// API v1
 	v1 := r.Group("/api/v1")

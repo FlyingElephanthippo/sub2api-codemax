@@ -1,0 +1,4 @@
+# Generated files contain operational ranges and manual customer IPs.
+generated/
+*.private.json
+__pycache__/

@@ -878,15 +878,21 @@ func ProvideAPIKeyService(
 	cfg *config.Config,
 	billingCacheService *BillingCacheService,
 	concurrencyService *ConcurrencyService,
+	domesticIPAccess *DomesticIPAccessService,
 ) *APIKeyService {
 	svc := NewAPIKeyService(apiKeyRepo, userRepo, groupRepo, userSubRepo, userGroupRateRepo, cache, cfg)
 	svc.SetRateLimitCacheInvalidator(billingCacheService)
 	svc.SetConcurrencyService(concurrencyService)
+	svc.domesticIPAccess = domesticIPAccess
 	return svc
 }
 
 // ProviderSet is the Wire provider set for all services
 var ProviderSet = wire.NewSet(
+	NewAdminDomesticIPService,
+	NewDomesticIPGrantService,
+	ProvideDomesticIPPolicy,
+	NewDomesticIPAccessService,
 	// Core services
 	ProvideAuthService,
 	NewPasskeyService,

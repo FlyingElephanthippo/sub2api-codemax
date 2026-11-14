@@ -1,0 +1,21 @@
+# Install a generated policy privately; replace paths/digest before enabling.
+# Never commit the generated snapshot or actual manual customer IP addresses.
+domestic_ip:
+  enabled: false
+  snapshot_file: /app/data/domestic-ip/REVIEWED_VERSION/snapshot.json
+  snapshot_sha256: REPLACE_WITH_REVIEWED_SHA256
+  trusted_proxy_ips:
+    - 127.0.0.1
+    - ::1
+
+# These also protect IP consumers outside the new domestic grant policy.
+server:
+  host: 127.0.0.1
+  trusted_proxies:
+    - 127.0.0.1/32
+    - ::1/128
+security:
+  trust_forwarded_ip_for_api_key_acl: false
+
+# Also disable the persisted api_key_acl_trust_forwarded_ip admin setting.
+# The database setting can override this file's compatibility setting.

@@ -31,7 +31,7 @@ func RegisterImageGenerationRoutes(
 			generations.GET("/history", h.ImageGeneration.ListHistory)
 			generations.POST("/history", panelRateLimiter.Heavy(), h.ImageGeneration.Archive)
 			// 归档单张最大 32MB，读回同理，按重查询限流。
-			generations.GET("/history/:id/content", panelRateLimiter.Heavy(), h.ImageGeneration.GetContent)
+			generations.GET("/history/:id/content", panelRateLimiter.Heavy(), h.DomesticIP.RequireAccess, h.ImageGeneration.GetContent)
 			generations.DELETE("/history/:id", h.ImageGeneration.DeleteHistory)
 		}
 	}
