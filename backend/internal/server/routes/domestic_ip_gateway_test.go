@@ -105,6 +105,7 @@ func TestDomesticIPGatewayAliasesCannotBypass(t *testing.T) {
 					r.ServeHTTP(w, domesticGatewayRequest(route.method, route.path, "1.0.1.7"))
 					require.Equal(t, http.StatusForbidden, w.Code, w.Body.String())
 					require.Contains(t, w.Body.String(), "当前 IP 尚未放行")
+					require.Equal(t, service.DomesticIPDeniedHeaderValue, w.Header().Get(service.DomesticIPDeniedHeader))
 				})
 			}
 			require.Equal(t, len(paths), repo.calls)
@@ -124,6 +125,7 @@ func TestDomesticIPAuthSucceedsOnlyWithExpectedGateDecision(t *testing.T) {
 			{"foreign", "8.8.8.8", "127.0.0.1:1234", false, nil, 200},
 			{"granted IPv4", "1.0.1.7", "127.0.0.1:1234", true, nil, 200},
 			{"granted IPv6", "240e::7", "127.0.0.1:1234", true, nil, 200},
+			{"domestic denied", "1.0.1.7", "127.0.0.1:1234", false, nil, 403},
 			{"lookup unavailable", "1.0.1.7", "127.0.0.1:1234", false, errors.New("offline"), 503},
 			{"forged direct peer", "1.0.1.8", "8.8.8.8:1234", true, nil, 400},
 		} {
@@ -144,7 +146,36 @@ func TestDomesticIPAuthSucceedsOnlyWithExpectedGateDecision(t *testing.T) {
 				r.ServeHTTP(w, req)
 				require.Equal(t, tc.status, w.Code, w.Body.String())
 				require.Equal(t, tc.status == 200, reached)
+				if tc.name == "domestic denied" {
+					require.Equal(t, service.DomesticIPDeniedHeaderValue, w.Header().Get(service.DomesticIPDeniedHeader))
+				} else {
+					require.Empty(t, w.Header().Get(service.DomesticIPDeniedHeader))
+				}
 			})
+		}
+	}
+}
+
+func TestDomesticIPAdmissionSignalDoesNotMarkAuthenticationOrBusinessErrors(t *testing.T) {
+	for _, google := range []bool{false, true} {
+		for _, status := range []int{401, 403, 429, 503} {
+			repo := &domesticGatewayGrantRepo{allowed: true}
+			_, svc, cfg := domesticGatewayFixture(t, config.RunModeSimple, repo)
+			r := gin.New()
+			if google {
+				r.Use(servermiddleware.APIKeyAuthWithSubscriptionGoogle(svc, nil, cfg))
+			} else {
+				r.Use(gin.HandlerFunc(servermiddleware.NewAPIKeyAuthMiddleware(svc, nil, cfg)))
+			}
+			r.GET("/check", func(c *gin.Context) { c.Status(status) })
+			req := domesticGatewayRequest("GET", "/check", "1.0.1.7")
+			if status == 401 {
+				req.Header.Set("Authorization", "Bearer invalid-key")
+			}
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			require.Equal(t, status, w.Code)
+			require.Empty(t, w.Header().Get(service.DomesticIPDeniedHeader))
 		}
 	}
 }

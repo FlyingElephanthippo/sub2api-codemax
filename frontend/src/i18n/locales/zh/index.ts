@@ -8,6 +8,7 @@ import videoGen from './videoGen'
 import admin from './admin'
 import misc from './misc'
 import domesticIp from './domesticIp'
+import adminDomesticIp from './adminDomesticIp'
 
 export default {
   ...landing,
@@ -20,4 +21,5 @@ export default {
   admin,
   ...misc,
   ...domesticIp,
+  ...adminDomesticIp,
 }

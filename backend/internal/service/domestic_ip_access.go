@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -9,6 +10,17 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/domesticip"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
+
+const DomesticIPDeniedHeader = "X-Sub2api-Network-Denied"
+const DomesticIPDeniedHeaderValue = "domestic-ip"
+
+// MarkDomesticIPDenied lets the trusted ingress preserve the network-denial
+// transport behavior. Other authorization and upstream errors must never set it.
+func MarkDomesticIPDenied(headers http.Header, err error) {
+	if errors.Is(err, ErrDomesticIPDenied) {
+		headers.Set(DomesticIPDeniedHeader, DomesticIPDeniedHeaderValue)
+	}
+}
 
 var (
 	ErrDomesticIPDenied      = infraerrors.Forbidden("DOMESTIC_IP_NOT_ALLOWED", "当前 IP 尚未放行，请到控制台完成自助放行后重试。")

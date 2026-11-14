@@ -265,6 +265,19 @@ func (p *Policy) IsManualAllowed(raw string) bool {
 	return found
 }
 
+// ManualIPs exposes a detached, sorted view for the administrator's read-only inventory.
+func (p *Policy) ManualIPs() []string {
+	result := []string{}
+	if p == nil {
+		return result
+	}
+	for ip := range p.manual {
+		result = append(result, ip.String())
+	}
+	sort.Strings(result)
+	return result
+}
+
 func (p *Policy) NeedsGrant(r *http.Request) (string, bool, error) {
 	if !p.Enabled() {
 		return "", false, nil

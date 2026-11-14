@@ -121,6 +121,7 @@ func (h *DomesticIPHandler) RequireAccess(c *gin.Context) {
 		return
 	}
 	if err := h.access.Check(c.Request); err != nil {
+		service.MarkDomesticIPDenied(c.Writer.Header(), err)
 		response.ErrorFrom(c, err)
 		c.Abort()
 		return
@@ -138,6 +139,7 @@ func (h *DomesticIPHandler) NetworkAccess(c *gin.Context) {
 		return
 	}
 	if err := h.access.Check(c.Request); err != nil {
+		service.MarkDomesticIPDenied(c.Writer.Header(), err)
 		response.ErrorFrom(c, err)
 		return
 	}

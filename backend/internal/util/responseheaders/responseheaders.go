@@ -93,6 +93,11 @@ func FilterHeaders(src http.Header, filter *CompiledHeaderFilter) http.Header {
 	filtered := make(http.Header, len(src))
 	for key, values := range src {
 		lower := strings.ToLower(key)
+		// Reserved for this gateway's network admission result. Even an explicit
+		// AdditionalAllowed entry must not let an upstream spoof the ingress signal.
+		if lower == "x-sub2api-network-denied" {
+			continue
+		}
 		if _, blocked := filter.forceRemove[lower]; blocked {
 			continue
 		}

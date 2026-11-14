@@ -192,12 +192,14 @@ func (r *domesticIPGrantRepository) Mutate(ctx context.Context, change service.D
 func (r *domesticIPGrantRepository) HasActiveGrant(ctx context.Context, ip string) (bool, error) {
 	// A shared IP stays allowed while any active owner still qualifies. This
 	// reads live payment state, so a successful refund needs no cache invalidation.
-	const query = `SELECT EXISTS (
+	const query = `SELECT CASE WHEN EXISTS (
+        SELECT 1 FROM admin_domestic_ip_grants WHERE ip = $1::inet
+    ) THEN true ELSE EXISTS (
         SELECT 1 FROM user_ip_grants g JOIN users u ON u.id = g.user_id
         WHERE g.ip = $1::inet AND u.deleted_at IS NULL AND u.status = 'active'
         AND (SELECT ` + domesticIPNetPaidCentsExpression + `
              FROM payment_orders p WHERE p.user_id = g.user_id AND ` + domesticIPPaidOrderFilter + `) >= $2
-    )`
+    ) END`
 	var allowed bool
 	err := r.db.QueryRowContext(ctx, query, ip, service.DomesticIPGrantMinimumPaidCents).Scan(&allowed)
 	return allowed, err

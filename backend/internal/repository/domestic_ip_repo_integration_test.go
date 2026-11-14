@@ -47,13 +47,17 @@ func domesticIPIntegrationDB(t *testing.T) *sql.DB {
 		require.NoError(t, dropErr)
 		_ = admin.Close()
 	})
-	_, err = db.Exec(`CREATE TABLE users (id bigint PRIMARY KEY, status text NOT NULL DEFAULT 'active', deleted_at timestamptz, total_recharged numeric DEFAULT 0);
+	_, err = db.Exec(`CREATE TABLE users (id bigint PRIMARY KEY, role text NOT NULL DEFAULT 'user', status text NOT NULL DEFAULT 'active', deleted_at timestamptz, total_recharged numeric DEFAULT 0);
         CREATE TABLE payment_orders (id bigserial PRIMARY KEY, user_id bigint NOT NULL, order_type text NOT NULL DEFAULT 'balance',
             paid_at timestamptz, status text NOT NULL DEFAULT 'COMPLETED', amount numeric NOT NULL, pay_amount numeric NOT NULL,
             bonus_amount numeric NOT NULL DEFAULT 0, refund_amount numeric, refund_at timestamptz, provider_snapshot jsonb);
         INSERT INTO users(id,total_recharged) VALUES (1,100000),(2,100000),(3,100000),(4,100000);`)
 	require.NoError(t, err)
 	migration, err := os.ReadFile(filepath.Join("..", "..", "migrations", "251_user_ip_grants.sql"))
+	require.NoError(t, err)
+	_, err = db.Exec(string(migration))
+	require.NoError(t, err)
+	migration, err = os.ReadFile(filepath.Join("..", "..", "migrations", "252_admin_domestic_ip_grants.sql"))
 	require.NoError(t, err)
 	_, err = db.Exec(string(migration))
 	require.NoError(t, err)

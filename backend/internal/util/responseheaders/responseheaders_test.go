@@ -7,6 +7,24 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 )
 
+func TestNetworkAdmissionHeaderCannotBeForwarded(t *testing.T) {
+	for _, key := range []string{"X-Sub2api-Network-Denied", "x-sub2api-network-denied", "X-SUB2API-NETWORK-DENIED"} {
+		for _, enabled := range []bool{false, true} {
+			src := http.Header{key: {"domestic-ip"}, "Content-Type": {"application/json"}}
+			filter := CompileHeaderFilter(config.ResponseHeaderConfig{Enabled: enabled, AdditionalAllowed: []string{key}})
+			filtered := FilterHeaders(src, filter)
+			if len(filtered) != 1 || filtered.Get("Content-Type") != "application/json" {
+				t.Fatalf("reserved signal leaked with key %q enabled=%v: %v", key, enabled, filtered)
+			}
+			dst := http.Header{}
+			WriteFilteredHeaders(dst, src, filter)
+			if dst.Get("X-Sub2api-Network-Denied") != "" {
+				t.Fatal("upstream supplied admission signal was written")
+			}
+		}
+	}
+}
+
 func TestFilterHeadersDisabledUsesDefaultAllowlist(t *testing.T) {
 	src := http.Header{}
 	src.Add("Content-Type", "application/json")

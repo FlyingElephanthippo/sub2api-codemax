@@ -475,6 +475,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/ip-grants',
+    name: 'AdminDomesticIPGrants',
+    component: () => import('@/views/admin/DomesticIPGrantsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'IP access',
+      titleKey: 'adminDomesticIp.title',
+      descriptionKey: 'adminDomesticIp.description'
+    }
+  },
+  {
     path: '/admin/users',
     name: 'AdminUsers',
     component: () => import('@/views/admin/UsersView.vue'),

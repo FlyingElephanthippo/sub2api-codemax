@@ -159,6 +159,7 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 			return
 		}
 		if err := apiKeyService.ValidateDomesticIP(c.Request); err != nil {
+			service.MarkDomesticIPDenied(c.Writer.Header(), err)
 			MarkIngressRejected(c, IngressRejectIPRestricted)
 			AbortWithError(c, infraerrors.Code(err), infraerrors.Reason(err), infraerrors.Message(err))
 			return

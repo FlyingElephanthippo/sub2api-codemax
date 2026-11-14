@@ -115,6 +115,7 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 			return
 		}
 		if err := apiKeyService.ValidateDomesticIP(c.Request); err != nil {
+			service.MarkDomesticIPDenied(c.Writer.Header(), err)
 			MarkIngressRejected(c, IngressRejectIPRestricted)
 			abortWithGoogleError(c, infraerrors.Code(err), infraerrors.Message(err))
 			return
