@@ -1,6 +1,6 @@
 # 管理员动态 IP 放行与地域拒绝行为
 
-状态：开发与本地验证完成，尚未部署。此前的用户自助放行已发布；本次增量需要首次切换应用和配套重载 Caddy，后续增删动态记录无需重启。
+状态：2026-11-14 18:07（北京时间）已完成用户授权的生产发布。首次应用切换与配套 Caddy 重载已完成，后续增删动态记录无需重启。实际验证和维护窗口见 [生产发布记录](PRODUCTION-2026-11-14.md)。
 
 ## 行为
 
@@ -33,7 +33,7 @@ python deploy/domestic-ip/verify_caddy_local.py --caddy <Caddy 2.6.2>
 python deploy/domestic-ip/verify_transport_retry.py --caddy <Caddy 2.6.2>
 ```
 
-集成测试需要独立的 `DOMESTIC_IP_TEST_DATABASE_URL`；协议测试使用 `httpx[http2]` 和 `cryptography`。未运行整个项目全部测试，未做客户桌面版恢复实测，也未将本次功能在生产激活。
+集成测试需要独立的 `DOMESTIC_IP_TEST_DATABASE_URL`；协议测试使用 `httpx[http2]` 和 `cryptography`。未运行整个项目全部测试，未做客户桌面版恢复或国内多运营商实测。上线后已核对动态记录、审计、无计费准入及真实应用与隔离本机 Caddy 的 HTTP/1.1 连接中断；HTTP/2 证据仍为上述本地合成验证。
 
 ## 增量发布
 
