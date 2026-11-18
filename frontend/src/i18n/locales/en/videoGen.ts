@@ -1,7 +1,7 @@
 export default {
   videoGen: {
     title: 'Video Generation', description: 'Generate a video from a description or one reference image, then preview and download it here.',
-    apiKey: 'API key', selectKey: 'Select a key', noKeys: 'No video-capable key is available. Create an API key assigned to a video channel first.',
+    apiKey: 'API key', selectKey: 'Select a key', noKeys: 'No video-capable key is available. Create an API key assigned to a video channel first.', createKey: 'Create API key',
     model: 'Model', selectModel: 'Select a model', loadingModels: 'Loading models…', noModels: 'This key has no video models. Ask an administrator to configure a video channel.',
     retry: 'Retry', prompt: 'Video description', promptPlaceholder: 'Describe the subject, motion, camera and surroundings…', duration: 'Requested duration', seconds: '{count} seconds',
     aspectRatio: 'Aspect ratio', landscape: 'Landscape 16:9', portrait: 'Portrait 9:16', reference: 'Reference image (optional)',

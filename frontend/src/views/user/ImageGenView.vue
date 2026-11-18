@@ -14,6 +14,11 @@
         </div>
       </div>
 
+      <div v-if="!loadingKeys && !keys.length" role="status" class="rounded-xl border border-gray-200 p-4 text-sm text-gray-600 dark:border-dark-700 dark:text-gray-400">
+        <p>{{ t('imageGen.noKeys') }}</p>
+        <router-link to="/keys" class="mt-2 inline-block text-primary-600 underline dark:text-primary-400">{{ t('imageGen.createKey') }}</router-link>
+      </div>
+
       <div class="flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-dark-800">
         <button
           v-for="tabItem in tabs"
@@ -495,6 +500,7 @@ const tabs = computed<Array<{ value: TabValue; label: string }>>(() => {
 
 const activeTab = ref<TabValue>('generate')
 const keys = ref<ApiKey[]>([])
+const loadingKeys = ref(true)
 const selectedKeyID = ref<number | ''>('')
 
 const model = ref<string>(IMAGE_GEN_DEFAULTS.model)
@@ -683,6 +689,7 @@ function historyContentMissing(error: unknown): boolean {
 
 async function loadKeys(): Promise<void> {
   const token = ++keyLoadToken
+  loadingKeys.value = true
   try {
     const response = await keysAPI.list(1, 100, { status: 'active' })
     if (disposed || token !== keyLoadToken) return
@@ -698,6 +705,8 @@ async function loadKeys(): Promise<void> {
   } catch {
     if (disposed || token !== keyLoadToken) return
     keys.value = []
+  } finally {
+    if (token === keyLoadToken) loadingKeys.value = false
   }
 }
 

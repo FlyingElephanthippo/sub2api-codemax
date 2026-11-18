@@ -1,7 +1,7 @@
 export default {
   videoGen: {
     title: '视频生成', description: '用文字或一张参考图生成视频，完成后在此播放和下载。',
-    apiKey: 'API 密钥', selectKey: '选择密钥', noKeys: '没有可用于视频的密钥，请先创建绑定视频渠道的 API 密钥。',
+    apiKey: 'API 密钥', selectKey: '选择密钥', noKeys: '没有可用于视频的密钥，请先创建绑定视频渠道的 API 密钥。', createKey: '创建 API 密钥',
     model: '模型', selectModel: '选择模型', loadingModels: '正在获取模型…', noModels: '当前密钥没有可用的视频模型，请联系管理员配置视频渠道。',
     retry: '重试', prompt: '视频描述', promptPlaceholder: '描述主体、动作、镜头和环境…', duration: '请求时长', seconds: '{count} 秒',
     aspectRatio: '画面比例', landscape: '横屏 16:9', portrait: '竖屏 9:16', reference: '参考图（可选）',

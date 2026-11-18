@@ -1,5 +1,5 @@
-import { flushPromises, mount } from '@vue/test-utils'
-import { defineComponent } from 'vue'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
+import { defineComponent, KeepAlive, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import ImageGenView from '../ImageGenView.vue'
@@ -70,7 +70,7 @@ describe('ImageGenView group model availability', () => {
   function mountView(props: { providerFilter?: ImageProvider; fixedPlatform?: string } = {}) {
     const wrapper = mount(ImageGenView, {
       props,
-      global: { stubs: { Select: SelectStub, EmptyState: true, LoadingSpinner: true } },
+      global: { stubs: { Select: SelectStub, EmptyState: true, LoadingSpinner: true, RouterLink: RouterLinkStub } },
     })
     wrappers.push(wrapper)
     return wrapper
@@ -124,6 +124,46 @@ describe('ImageGenView group model availability', () => {
     vi.useRealTimers()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+  })
+
+  it('guides a user without image keys to create one and never sends a generation', async () => {
+    listKeys.mockResolvedValue({ items: [] })
+    const wrapper = mountView()
+    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+    await flushPromises()
+    expect(wrapper.get('[role="status"]').text()).toContain('imageGen.noKeys')
+    expect(wrapper.getComponent(RouterLinkStub).props('to')).toBe('/keys')
+    await wrapper.get('textarea').setValue('A cat in the garden')
+    expect(button(wrapper, 'imageGen.generate').attributes('disabled')).toBeDefined()
+    await button(wrapper, 'imageGen.generate').trigger('click')
+    expect(listModels).not.toHaveBeenCalled()
+    expect(estimate).not.toHaveBeenCalled()
+    expect(generate).not.toHaveBeenCalled()
+    expect(generateBatch).not.toHaveBeenCalled()
+  })
+
+  it('loads a newly created image key when returning to the cached page', async () => {
+    listKeys.mockResolvedValueOnce({ items: [] }).mockResolvedValue({ items: [apiKey(1)] })
+    const visible = ref(true)
+    const wrapper = mount(defineComponent({
+      components: { KeepAlive, ImageGenView },
+      setup: () => ({ visible }),
+      template: '<KeepAlive><ImageGenView v-if="visible" /></KeepAlive>',
+    }), {
+      global: { stubs: { Select: SelectStub, EmptyState: true, LoadingSpinner: true, RouterLink: RouterLinkStub } },
+    })
+    wrappers.push(wrapper)
+    await flushPromises()
+    expect(listKeys).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('imageGen.noKeys')
+    visible.value = false
+    await flushPromises()
+    visible.value = true
+    await flushPromises()
+    expect(listKeys).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).not.toContain('imageGen.noKeys')
+    expect(listModels).toHaveBeenCalledWith('sk-model-test-1', expect.any(AbortSignal))
+    expect(generate).not.toHaveBeenCalled()
   })
 
   it('offers only concrete image IDs advertised by the selected Key group', async () => {
