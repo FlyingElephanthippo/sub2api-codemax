@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { RouteRecordRaw } from 'vue-router'
 
 type NavigationGuard = (
   to: Record<string, any>,
@@ -8,6 +9,7 @@ type NavigationGuard = (
 
 const routerHarness = vi.hoisted(() => ({
   guard: null as NavigationGuard | null,
+  routes: [] as RouteRecordRaw[],
 }))
 
 const authStore = vi.hoisted(() => ({
@@ -33,13 +35,16 @@ const appStore = vi.hoisted(() => ({
 
 vi.mock('vue-router', () => ({
   createWebHistory: vi.fn(() => ({})),
-  createRouter: vi.fn(() => ({
-    beforeEach: vi.fn((guard: NavigationGuard) => {
-      routerHarness.guard = guard
-    }),
-    afterEach: vi.fn(),
-    onError: vi.fn(),
-  })),
+  createRouter: vi.fn((options: { routes: RouteRecordRaw[] }) => {
+    routerHarness.routes = options.routes
+    return {
+      beforeEach: vi.fn((guard: NavigationGuard) => {
+        routerHarness.guard = guard
+      }),
+      afterEach: vi.fn(),
+      onError: vi.fn(),
+    }
+  }),
 }))
 
 vi.mock('@/stores/auth', () => ({
@@ -106,11 +111,17 @@ function runGuard(meta: Record<string, unknown>, path: string) {
   return { navigation, next }
 }
 
-describe('feature route guard', () => {
-  beforeAll(async () => {
-    await import('@/router')
-  })
+function runDeclaredRouteGuard(path: string) {
+  const route = routerHarness.routes.find((candidate) => candidate.path === path)
+  if (!route) throw new Error(`Route was not registered: ${path}`)
+  return runGuard(route.meta ?? {}, path)
+}
 
+beforeAll(async () => {
+  await import('@/router')
+})
+
+describe('feature route guard', () => {
   beforeEach(() => {
     authStore.isAuthenticated = true
     authStore.isAdmin = false
@@ -208,5 +219,64 @@ describe('subscription route guard (opt-out flag)', () => {
     await navigation
 
     expect(next).toHaveBeenCalledWith('/admin/dashboard')
+  })
+})
+
+describe('media generation route access', () => {
+  beforeEach(() => {
+    authStore.isAuthenticated = true
+    authStore.isAdmin = false
+    authStore.isSimpleMode = false
+    authStore.hasPendingAuthSession = false
+    appStore.backendModeEnabled = false
+    appStore.publicSettingsLoaded = true
+    appStore.cachedPublicSettings = null
+  })
+
+  it.each(['/image-gen', '/video-gen'])('allows an authenticated user to open %s', async (path) => {
+    const { navigation, next } = runDeclaredRouteGuard(path)
+    await navigation
+
+    expect(next).toHaveBeenCalledOnce()
+    expect(next).toHaveBeenCalledWith()
+  })
+
+  it.each(['/image-gen', '/video-gen'])('requires login before opening %s', async (path) => {
+    authStore.isAuthenticated = false
+    const { navigation, next } = runDeclaredRouteGuard(path)
+    await navigation
+
+    expect(next).toHaveBeenCalledOnce()
+    expect(next).toHaveBeenCalledWith({ path: '/login', query: { redirect: path } })
+  })
+
+  it.each(['/admin/users', '/admin/accounts', '/admin/settings'])(
+    'keeps %s restricted to administrators',
+    async (path) => {
+      const { navigation, next } = runDeclaredRouteGuard(path)
+      await navigation
+
+      expect(next).toHaveBeenCalledOnce()
+      expect(next).toHaveBeenCalledWith('/dashboard')
+    }
+  )
+
+  it.each(['/image-gen', '/video-gen'])('keeps backend mode restrictions on %s', async (path) => {
+    appStore.backendModeEnabled = true
+    const { navigation, next } = runDeclaredRouteGuard(path)
+    await navigation
+
+    expect(next).toHaveBeenCalledOnce()
+    expect(next).toHaveBeenCalledWith('/login')
+  })
+
+  it.each(['/image-gen', '/video-gen'])('allows administrators to open %s in backend mode', async (path) => {
+    appStore.backendModeEnabled = true
+    authStore.isAdmin = true
+    const { navigation, next } = runDeclaredRouteGuard(path)
+    await navigation
+
+    expect(next).toHaveBeenCalledOnce()
+    expect(next).toHaveBeenCalledWith()
   })
 })

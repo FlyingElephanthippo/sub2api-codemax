@@ -4,6 +4,8 @@ export default {
     description: '使用 API Key 生成与编辑图片',
     apiKey: 'API Key',
     selectKey: '请选择 API Key',
+    noKeys: '暂无可用于生图的 API Key，请先创建并绑定已开启生图的分组。',
+    createKey: '创建 API Key',
     model: '模型',
     selectModel: '请选择模型',
     modelsLoading: '正在加载分组模型…',

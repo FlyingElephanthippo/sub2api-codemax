@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { defineComponent, reactive } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VideoGenView from '../VideoGenView.vue'
@@ -27,7 +27,16 @@ function deferred<T>() {
 }
 const wrappers: Array<ReturnType<typeof mount>> = []
 function mountView() {
-  const wrapper = mount(VideoGenView)
+  const wrapper = mount(VideoGenView, { global: { stubs: { RouterLink: RouterLinkStub } } })
+  wrappers.push(wrapper)
+  return wrapper
+}
+function mountCachedView() {
+  const Host = defineComponent({
+    components: { VideoGenView }, data: () => ({ show: true }),
+    template: '<div><button id="navigate" @click="show = !show">navigate</button><KeepAlive include="VideoGenView"><VideoGenView v-if="show" /><aside v-else>Another page</aside></KeepAlive></div>',
+  })
+  const wrapper = mount(Host, { global: { stubs: { RouterLink: RouterLinkStub } } })
   wrappers.push(wrapper)
   return wrapper
 }
@@ -57,6 +66,73 @@ afterEach(() => {
 })
 
 describe('VideoGenView', () => {
+  it('guides users without a usable key to create one and prevents generation', async () => {
+    mocks.listKeys.mockResolvedValue({ items: [], pages: 1 })
+    const wrapper = mountView()
+    await flushPromises()
+    expect(wrapper.text()).toContain('videoGen.noKeys')
+    expect(wrapper.getComponent(RouterLinkStub).props('to')).toBe('/keys')
+    expect(wrapper.getComponent(RouterLinkStub).text()).toBe('videoGen.createKey')
+    await submit(wrapper)
+    expect(wrapper.get('button[type="submit"]').attributes()).toHaveProperty('disabled')
+    expect(mocks.listModels).not.toHaveBeenCalled()
+    expect(mocks.create).not.toHaveBeenCalled()
+  })
+  it('refreshes keys after returning from key creation without duplicating the first load', async () => {
+    mocks.listKeys.mockResolvedValueOnce({ items: [], pages: 1 })
+    const wrapper = mountCachedView()
+    await flushPromises()
+    expect(mocks.listKeys).toHaveBeenCalledOnce()
+    expect(wrapper.text()).toContain('videoGen.noKeys')
+    await wrapper.get('#navigate').trigger('click')
+    mocks.listKeys.mockResolvedValue({ items: [apiKey(2)], pages: 1 })
+    await wrapper.get('#navigate').trigger('click')
+    await flushPromises()
+    expect(mocks.listKeys).toHaveBeenCalledTimes(2)
+    expect(wrapper.get('#video-key').element).toHaveProperty('value', '2')
+    expect(wrapper.text()).not.toContain('videoGen.noKeys')
+    expect(mocks.listModels).toHaveBeenCalledWith('sk-user-2', expect.any(AbortSignal))
+    await submit(wrapper)
+    expect(mocks.create).toHaveBeenCalledOnce()
+    expect(mocks.create.mock.calls[0][0]).toBe('sk-user-2')
+  })
+  it('keeps an in-flight generation running when the cached page is reactivated', async () => {
+    const accepted = deferred<{ id: string; status: string; progress: number }>()
+    mocks.create.mockReturnValue(accepted.promise)
+    const wrapper = mountCachedView()
+    await flushPromises()
+    await submit(wrapper)
+    const signal = mocks.create.mock.calls[0][2] as AbortSignal
+    await wrapper.get('#navigate').trigger('click')
+    mocks.listKeys.mockResolvedValue({ items: [], pages: 1 })
+    await wrapper.get('#navigate').trigger('click')
+    await flushPromises()
+    expect(mocks.listKeys).toHaveBeenCalledOnce()
+    expect(signal.aborted).toBe(false)
+    accepted.resolve({ id: 'task_one', status: 'pending', progress: 10 })
+    await flushPromises()
+    expect(mocks.create).toHaveBeenCalledOnce()
+    expect(wrapper.get('video').attributes('src')).toBe('blob:protected-video')
+  })
+  it('prevents generation while returning to a cached page refreshes the key list', async () => {
+    const refreshed = deferred<{ items: ReturnType<typeof apiKey>[]; pages: number }>()
+    const wrapper = mountCachedView()
+    await flushPromises()
+    await wrapper.get('#video-prompt').setValue('A cat in the garden')
+    await wrapper.get('#navigate').trigger('click')
+    mocks.listKeys.mockReturnValueOnce(refreshed.promise)
+    await wrapper.get('#navigate').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('button[type="submit"]').attributes()).toHaveProperty('disabled')
+    await wrapper.get('form').trigger('submit')
+    expect(mocks.create).not.toHaveBeenCalled()
+    refreshed.resolve({ items: [apiKey(2)], pages: 1 })
+    await flushPromises()
+    expect(wrapper.get('#video-key').element).toHaveProperty('value', '2')
+    await submit(wrapper)
+    expect(mocks.create).toHaveBeenCalledOnce()
+    expect(mocks.create.mock.calls[0][0]).toBe('sk-user-2')
+  })
   it('uses only usable video platform keys and offers models advertised by the chosen key', async () => {
     mocks.listKeys.mockResolvedValue({ items: [
       apiKey(1), apiKey(2, 'composite'), apiKey(3, 'openai'),
@@ -208,12 +284,7 @@ describe('VideoGenView', () => {
   it('retains an accepted task across a cached route switch and does not submit again', async () => {
     const accepted = deferred<{ id: string; status: string; progress: number }>()
     mocks.create.mockReturnValue(accepted.promise)
-    const Host = defineComponent({
-      components: { VideoGenView }, data: () => ({ show: true }),
-      template: '<div><button id="navigate" @click="show = !show">navigate</button><KeepAlive include="VideoGenView"><VideoGenView v-if="show" /><aside v-else>Another page</aside></KeepAlive></div>',
-    })
-    const wrapper = mount(Host)
-    wrappers.push(wrapper)
+    const wrapper = mountCachedView()
     await flushPromises()
     await submit(wrapper)
     await wrapper.get('#navigate').trigger('click')
@@ -222,6 +293,9 @@ describe('VideoGenView', () => {
     await wrapper.get('#navigate').trigger('click')
     await flushPromises()
     expect(mocks.create).toHaveBeenCalledOnce()
+    expect(mocks.listKeys).toHaveBeenCalledTimes(2)
+    expect(mocks.listModels).toHaveBeenCalledOnce()
+    expect(wrapper.get('#video-prompt').element).toHaveProperty('value', 'A cat in the garden')
     expect(wrapper.get('video').attributes('src')).toBe('blob:protected-video')
   })
 })

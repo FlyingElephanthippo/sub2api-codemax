@@ -246,7 +246,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/VideoGenView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
+      requiresAdmin: false,
       title: 'Video Generation',
       titleKey: 'videoGen.title',
       descriptionKey: 'videoGen.description'

@@ -4,6 +4,8 @@ export default {
     description: 'Generate and edit images with your API keys',
     apiKey: 'API Key',
     selectKey: 'Select an API key',
+    noKeys: 'No image-capable API key is available. Create one assigned to a group with image generation enabled.',
+    createKey: 'Create an API key',
     model: 'Model',
     selectModel: 'Select a model',
     modelsLoading: 'Loading group models…',

@@ -13,7 +13,10 @@
               <option value="">{{ t('videoGen.selectKey') }}</option>
               <option v-for="key in keys" :key="key.id" :value="key.id">{{ key.name }}{{ key.group?.name ? ` · ${key.group.name}` : '' }}</option>
             </select>
-            <p v-if="!loadingKeys && !keys.length" class="input-hint mt-2">{{ t('videoGen.noKeys') }}</p>
+            <div v-if="!loadingKeys && !keys.length" class="mt-2 space-y-2">
+              <p class="input-hint">{{ t('videoGen.noKeys') }}</p>
+              <RouterLink to="/keys" class="inline-block text-sm text-primary-600 underline dark:text-primary-400">{{ t('videoGen.createKey') }}</RouterLink>
+            </div>
           </div>
           <div>
             <label for="video-model" class="input-label">{{ t('videoGen.model') }}</label>
@@ -69,13 +72,13 @@
             </div>
             <p v-if="task" class="break-all text-xs text-gray-500">{{ t('videoGen.taskID') }}: {{ task.id }}</p>
             <button v-if="busy && task" type="button" class="btn btn-secondary" @click="pause">{{ loadingContent ? t('videoGen.stopLoading') : t('videoGen.pause') }}</button>
-            <button v-if="task?.status === 'pending' && !busy" type="button" class="btn btn-primary" @click="resume">{{ t('videoGen.resume') }}</button>
+            <button v-if="task?.status === 'pending' && !busy" type="button" class="btn btn-primary" :disabled="loadingKeys" @click="resume">{{ t('videoGen.resume') }}</button>
             <p v-if="task?.status === 'pending'" class="text-xs text-gray-500">{{ t('videoGen.pauseHint') }}</p>
           </div>
           <p v-if="error" role="alert" class="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">{{ error }}</p>
           <video v-if="videoURL" :src="videoURL" class="w-full rounded-xl bg-black" controls playsinline preload="metadata" />
           <a v-if="videoURL" class="btn btn-primary inline-flex" :href="videoURL" :download="`${task?.id || 'video'}.mp4`">{{ t('videoGen.download') }}</a>
-          <button v-if="task?.status === 'done' && !videoURL && !busy" type="button" class="btn btn-secondary" @click="resume">{{ t('videoGen.loadVideo') }}</button>
+          <button v-if="task?.status === 'done' && !videoURL && !busy" type="button" class="btn btn-secondary" :disabled="loadingKeys" @click="resume">{{ t('videoGen.loadVideo') }}</button>
           <details class="rounded-lg border border-gray-200 p-3 text-sm dark:border-dark-700">
             <summary class="cursor-pointer font-medium">{{ t('videoGen.apiUsage') }}</summary>
             <p class="my-3 text-gray-500">{{ t('videoGen.apiHint') }}</p>
@@ -88,7 +91,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, onUnmounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -121,7 +125,7 @@ const downloadBytes = ref(0)
 const downloadTotal = ref<number | undefined>()
 const durations = computed(() => model.value === 'muse-video' ? [5, 6, 8, 10] : [5, 6, 8, 10, 15])
 const canSubmit = computed(() => !!selectedKey.value && !!prompt.value.trim() && models.value.includes(model.value)
-  && !busy.value && !readingReference.value && !loadingModels.value && task.value?.status !== 'pending')
+  && !busy.value && !readingReference.value && !loadingKeys.value && !loadingModels.value && task.value?.status !== 'pending')
 const statusLabel = computed(() => loadingContent.value ? t('videoGen.loadingCompletedVideo') : !task.value ? t('videoGen.submitting') : task.value.status === 'done'
   ? t('videoGen.completed') : task.value.status === 'failed' ? t('videoGen.failed') : busy.value
     ? t('videoGen.processing') : t('videoGen.paused'))
@@ -139,6 +143,7 @@ let referenceLoad = 0
 let controller: AbortController | null = null
 let modelController: AbortController | null = null
 let recoveryAttempted = false
+let activated = false
 
 function clearVideo(): void {
   if (videoURL.value) URL.revokeObjectURL(videoURL.value)
@@ -309,6 +314,10 @@ watch(() => auth.isAuthenticated ? auth.user?.id : null, () => {
   if (auth.isAuthenticated) void loadKeys()
 }, { flush: 'sync' })
 onMounted(() => { void loadKeys() })
+onActivated(() => {
+  if (activated && !busy.value && task.value?.status !== 'pending') void loadKeys()
+  activated = true
+})
 onUnmounted(() => {
   disposed = true
   keyLoad += 1
