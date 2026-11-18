@@ -28,6 +28,15 @@ describe('magpieImport utils', () => {
         anthropic: 'https://api.example.com/antigravity',
         gemini: 'https://api.example.com/antigravity/v1beta'
       }
+    },
+    {
+      platform: 'composite' as GroupPlatform,
+      expected: {
+        chat: 'https://api.example.com/v1',
+        responses: 'https://api.example.com/v1',
+        anthropic: 'https://api.example.com',
+        gemini: 'https://api.example.com/v1beta'
+      }
     }
   ])('maps $platform to Magpie API endpoints', ({ platform, expected }) => {
     expect(resolveMagpieImportEndpoints(platform, baseUrl)).toEqual(expected)

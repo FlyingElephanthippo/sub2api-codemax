@@ -25,6 +25,13 @@ export function resolveMagpieImportEndpoints(
   const root = normalizeBaseUrl(baseUrl)
 
   switch (platform || 'anthropic') {
+    case 'composite':
+      return {
+        chat: `${root}/v1`,
+        responses: `${root}/v1`,
+        anthropic: root,
+        gemini: `${root}/v1beta`
+      }
     case 'openai':
       return {
         chat: `${root}/v1`,

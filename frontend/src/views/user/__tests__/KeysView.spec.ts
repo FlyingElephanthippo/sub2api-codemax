@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 
-import type { ApiKey } from '@/types'
+import type { ApiKey, Group } from '@/types'
 import { keysAPI } from '@/api'
 import KeysView from '../KeysView.vue'
 
@@ -295,6 +295,129 @@ describe('user KeysView column settings', () => {
     getAvailableGroups.mockResolvedValue([])
     getUserGroupRates.mockResolvedValue({})
     isCurrentStep.mockReturnValue(false)
+  })
+
+  describe('client imports', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      vi.spyOn(window, 'open').mockReturnValue(null)
+      vi.spyOn(document, 'hasFocus').mockReturnValue(false)
+    })
+
+    afterEach(() => {
+      vi.runOnlyPendingTimers()
+      vi.useRealTimers()
+      vi.restoreAllMocks()
+    })
+
+    function mockGroupedKey(platform: Group['platform']) {
+      const group: Pick<Group, 'platform'> = { platform }
+      const key = { ...createApiKey(), name: '  Shared / + Key  ', key: 'sk-test+/?&=#fragment' }
+      listKeys.mockResolvedValueOnce({
+        items: [{ ...key, group_id: 42, group }], total: 1, page: 1, page_size: 20, pages: 1,
+      })
+      return key
+    }
+
+    function expectNoKeyChanges() {
+      expect(copyToClipboard).not.toHaveBeenCalled()
+      expect(keysAPI.create).not.toHaveBeenCalled()
+      expect(updateKey).not.toHaveBeenCalled()
+    }
+
+    it.each([
+      { platform: 'anthropic', endpoints: { anthropic: 'https://gateway.example.test/proxy' } },
+      {
+        platform: 'openai', endpoints: {
+          chat: 'https://gateway.example.test/proxy/v1',
+          responses: 'https://gateway.example.test/proxy/v1',
+        },
+      },
+      { platform: 'gemini', endpoints: { gemini: 'https://gateway.example.test/proxy/v1beta' } },
+      {
+        platform: 'antigravity', endpoints: {
+          anthropic: 'https://gateway.example.test/proxy/antigravity',
+          gemini: 'https://gateway.example.test/proxy/antigravity/v1beta',
+        },
+      },
+      {
+        platform: 'composite', endpoints: {
+          chat: 'https://gateway.example.test/proxy/v1',
+          responses: 'https://gateway.example.test/proxy/v1',
+          anthropic: 'https://gateway.example.test/proxy',
+          gemini: 'https://gateway.example.test/proxy/v1beta',
+        },
+      },
+    ] as const)('opens Magpie with the selected $platform key and configured site details', async ({ platform, endpoints }) => {
+      const key = mockGroupedKey(platform)
+      getPublicSettings.mockResolvedValue({
+        api_base_url: 'https://gateway.example.test/proxy/v1/', site_name: '  My Gateway  ',
+      })
+      const wrapper = await mountView()
+
+      await getButtonByText(wrapper, 'keys.importToMagpie').trigger('click')
+
+      expect(window.open).toHaveBeenCalledOnce()
+      const [target, windowName] = vi.mocked(window.open).mock.calls[0]
+      const url = new URL(String(target))
+      expect(windowName).toBe('_self')
+      expect(`${url.origin}${url.pathname}`).toBe('https://usemagpie.ai/import')
+      expect(url.search).toBe('')
+      expect(Object.fromEntries(new URLSearchParams(url.hash.slice(1)))).toEqual({
+        name: 'My Gateway - Shared / + Key', key: key.key, ...endpoints,
+      })
+      expectNoKeyChanges()
+      wrapper.unmount()
+    })
+
+    it('uses the current origin and default site when Magpie import settings and key group are missing', async () => {
+      const key = { ...createApiKey(), name: '   ' }
+      listKeys.mockResolvedValueOnce({ items: [key], total: 1, pages: 1 })
+      const wrapper = await mountView()
+
+      await getButtonByText(wrapper, 'keys.importToMagpie').trigger('click')
+
+      expect(window.open).toHaveBeenCalledOnce()
+      const [target, windowName] = vi.mocked(window.open).mock.calls[0]
+      const url = new URL(String(target))
+      expect(windowName).toBe('_self')
+      expect(`${url.origin}${url.pathname}`).toBe('https://usemagpie.ai/import')
+      expect(url.search).toBe('')
+      expect(Object.fromEntries(new URLSearchParams(url.hash.slice(1)))).toEqual({
+        name: 'sub2api', key: key.key, anthropic: window.location.origin,
+      })
+      expectNoKeyChanges()
+      wrapper.unmount()
+    })
+
+    it.each([
+      { platform: 'openai', app: 'codex', endpoint: 'https://gateway.example.test/proxy' },
+      { platform: 'grok', app: 'grokbuild', endpoint: 'https://gateway.example.test/proxy/v1' },
+    ] as const)('preserves the CC Switch protocol and $app client for $platform keys', async ({ platform, app, endpoint }) => {
+      const key = mockGroupedKey(platform)
+      getPublicSettings.mockResolvedValue({
+        api_base_url: 'https://gateway.example.test/proxy/', site_name: '  My Gateway  ',
+      })
+      const wrapper = await mountView()
+
+      await getButtonByText(wrapper, 'keys.importToCcSwitch').trigger('click')
+
+      expect(window.open).toHaveBeenCalledOnce()
+      const [target, windowName] = vi.mocked(window.open).mock.calls[0]
+      const url = new URL(String(target))
+      expect(windowName).toBe('_self')
+      expect(url.protocol).toBe('ccswitch:')
+      expect(url.hostname).toBe('v1')
+      expect(url.pathname).toBe('/import')
+      expect(url.searchParams.get('resource')).toBe('provider')
+      expect(url.searchParams.get('app')).toBe(app)
+      expect(url.searchParams.get('endpoint')).toBe(endpoint)
+      expect(url.searchParams.get('apiKey')).toBe(key.key)
+      expect(url.searchParams.get('name')).toBe('My Gateway')
+      expect(url.hash).toBe('')
+      expectNoKeyChanges()
+      wrapper.unmount()
+    })
   })
 
   it.each([
